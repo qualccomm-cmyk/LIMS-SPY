@@ -55,16 +55,89 @@ button{cursor:pointer}
 .btn.secondary{background:#35171d;color:#f7d8c6;border-color:#80414a}
 #connect[hidden]{display:none}
 .notice{font-size:10px;color:#bd9da0;line-height:1.6;margin-top:13px}
-/* ACCESS LIVE: fullscreen canvas landscape */
-html.video-active,body.video-active{width:100%;height:100%;overflow:hidden;background:#000}
+
+/* ACCESS LIVE: fullscreen tanpa memaksa rotasi perangkat */
+html.video-active,body.video-active{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#000;
+}
 .video-wrap{display:none}
-.video-wrap.show{display:block;position:fixed;inset:0;z-index:99999;width:100vw;height:100vh;height:100dvh;margin:0;padding:0;border:0;overflow:hidden;background:#000}
-.video-stage{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:hidden;background:#000}
-.video-stage video{position:absolute;inset:0;display:block;width:100%;height:100%;min-width:100%;min-height:100%;max-width:none;max-height:none;object-fit:cover;object-position:center;background:#000;border:0}
-.video-label{position:absolute;z-index:2;top:max(14px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left));padding:8px 11px;background:#16090dcc;border:1px solid #ffffff45;color:#fff;font-size:10px;font-weight:700;letter-spacing:1.3px;pointer-events:none}
-.video-close{position:absolute;z-index:3;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));width:44px;height:44px;display:grid;place-items:center;border:1px solid #ffffff66;border-radius:4px;background:#16090ddd;color:#fff;font-size:18px}
+.video-wrap.show{
+  display:block;
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  width:100%;
+  height:100%;
+  height:100dvh;
+  margin:0;
+  padding:0;
+  border:0;
+  overflow:hidden;
+  background:#000;
+}
+.video-stage{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:hidden;
+  background:#000;
+}
+.video-stage video{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  min-width:100%;
+  min-height:100%;
+  max-width:none;
+  max-height:none;
+  object-fit:cover;
+  object-position:center;
+  background:#000;
+  border:0;
+}
+.video-label{
+  position:absolute;
+  z-index:2;
+  top:max(14px,env(safe-area-inset-top));
+  left:max(14px,env(safe-area-inset-left));
+  padding:8px 11px;
+  background:#16090dcc;
+  border:1px solid #ffffff45;
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:1.3px;
+  pointer-events:none;
+}
+.video-close{
+  position:absolute;
+  z-index:3;
+  top:max(12px,env(safe-area-inset-top));
+  right:max(12px,env(safe-area-inset-right));
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border:1px solid #ffffff66;
+  border-radius:4px;
+  background:#16090ddd;
+  color:#fff;
+  font-size:18px;
+}
 .video-close:active{transform:scale(.94)}
-.video-wrap:fullscreen{width:100vw;height:100vh;height:100dvh;background:#000}
+.video-wrap:fullscreen{
+  width:100%;
+  height:100%;
+  background:#000;
+}
+
 .device-summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}
 .metric{background:#1a0b0f;border:1px solid #4a252c;padding:12px}
 .metric small{display:block;color:#a98a8d;font-size:9px;letter-spacing:1px;margin-bottom:6px}
@@ -313,23 +386,21 @@ async function openVideo(){
   videoWrap.classList.add('show');
   document.documentElement.classList.add('video-active');
   document.body.classList.add('video-active');
-  video.currentTime=0;
+
+  video.currentTime = 0;
   video.load();
 
-  // Fullscreen harus dimulai dari klik pengguna; setelah itu minta orientasi landscape.
+  // Fullscreen hanya untuk pemutar.
+  // Tidak ada screen.orientation.lock('landscape'),
+  // sehingga perangkat tidak dipaksa berputar.
   try{
-    if(videoWrap.requestFullscreen) await videoWrap.requestFullscreen();
-    else if(video.requestFullscreen) await video.requestFullscreen();
-  }catch(error){
-    console.warn('Fullscreen API tidak tersedia pada browser/WebView ini.',error);
-  }
-
-  try{
-    if(screen.orientation && screen.orientation.lock){
-      await screen.orientation.lock('landscape');
+    if(videoWrap.requestFullscreen){
+      await videoWrap.requestFullscreen();
+    }else if(video.requestFullscreen){
+      await video.requestFullscreen();
     }
   }catch(error){
-    console.warn('Penguncian landscape ditolak oleh host.',error);
+    console.warn('Fullscreen API tidak tersedia pada browser/WebView ini.',error);
   }
 
   try{
@@ -342,24 +413,38 @@ async function openVideo(){
 
 async function closeVideo(){
   video.pause();
-  video.currentTime=0;
+  video.currentTime = 0;
+
   videoWrap.classList.remove('show');
   document.documentElement.classList.remove('video-active');
   document.body.classList.remove('video-active');
+
   try{
-    if(document.fullscreenElement) await document.exitFullscreen();
-  }catch(error){console.warn(error)}
-  try{
-    if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
-  }catch(error){console.warn(error)}
+    if(document.fullscreenElement){
+      await document.exitFullscreen();
+    }
+  }catch(error){
+    console.warn(error);
+  }
+
+  // Tidak memanggil screen.orientation.unlock()
+  // karena halaman tidak pernah mengunci orientasi.
 }
 
 connectBtn.addEventListener('click',openVideo);
-const closeVideoBtn=document.getElementById('closeVideo');
-closeVideoBtn.addEventListener('click',()=>{closeVideo();notify('Video ditutup.');});
-document.addEventListener('keydown',event=>{
-  if(event.key==='Escape' && videoWrap.classList.contains('show')) closeVideo();
+
+const closeVideoBtn = document.getElementById('closeVideo');
+closeVideoBtn.addEventListener('click',()=>{
+  closeVideo();
+  notify('Video ditutup.');
 });
+
+document.addEventListener('keydown',event=>{
+  if(event.key === 'Escape' && videoWrap.classList.contains('show')){
+    closeVideo();
+  }
+});
+
 document.addEventListener('fullscreenchange',()=>{
   if(!document.fullscreenElement && videoWrap.classList.contains('show')){
     videoWrap.classList.remove('show');
@@ -375,15 +460,22 @@ resetBtn.addEventListener('click', () => {
   whatsapp.value = '';
   formStatus.textContent = 'MENUNGGU INPUT';
   connectBtn.hidden = true;
+
   video.pause();
   video.currentTime = 0;
   videoWrap.classList.remove('show');
   document.documentElement.classList.remove('video-active');
   document.body.classList.remove('video-active');
+
+  if(document.fullscreenElement){
+    document.exitFullscreen().catch(error=>console.warn(error));
+  }
+
   document.querySelectorAll('.control').forEach(button => {
     button.classList.remove('active');
     button.querySelector('.state').textContent = 'SIAP';
   });
+
   notify('Form telah diatur ulang.');
 });
 
@@ -392,8 +484,12 @@ document.querySelectorAll('.control').forEach(button => {
     const active = button.classList.toggle('active');
     button.querySelector('.state').textContent = active ? 'ACTIVE' : 'SIAP';
     const feature = button.dataset.feature;
+
     if (feature === 'Lokasi') {
-      document.getElementById('locationPanel').scrollIntoView({behavior:'smooth', block:'center'});
+      document.getElementById('locationPanel').scrollIntoView({
+        behavior:'smooth',
+        block:'center'
+      });
       notify(active ? 'Peta area ditampilkan.' : 'Indikator lokasi dinonaktifkan.');
     } else {
       notify(active ? feature + ' — indikator aktif.' : feature + ' — indikator siap.');
